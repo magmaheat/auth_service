@@ -1,0 +1,15 @@
+app:
+  name: "auth-service"
+  version: "1.0.0"
+
+http:
+  port: 8089
+
+log:
+  level: "debug"
+
+pg:
+  max_pool_size: 20
+
+jwt:
+  token_ttl: 60m
