@@ -1,9 +1,12 @@
 package app
 
 import (
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/magmaheat/auth_service/configs"
+	"github.com/magmaheat/auth_service/pkg/httpserver"
 	log "github.com/sirupsen/logrus"
+	"os"
 )
 
 func Run(configPath string) {
@@ -14,8 +17,25 @@ func Run(configPath string) {
 
 	setupLogger(cfg.Log.Level)
 
+	log.Info("Initializing handlers...")
 	handler := echo.New()
-	if err = handler.Start(":" + cfg.HTTP.Port); err != nil {
-		log.Fatalf("error start server: %w", err)
+
+	log.Info("Initializing server...")
+	httpServer := httpserver.New(handler, httpserver.Port(cfg.Port))
+
+	log.Info("Configuring grace shutdown...")
+	interrupt := make(chan os.Signal, 1)
+
+	select {
+	case s := <-interrupt:
+		log.Info("app - Run - signal: " + s.String())
+	case err = <-httpServer.Notify():
+		log.Info(fmt.Errorf("app - Run - httpServer.Notify: %w", err))
+	}
+
+	log.Info("Shutting down...")
+	err = httpServer.Shutdown()
+	if err != nil {
+		log.Info(fmt.Errorf("app - Run - httpServer.Shutdown: %w", err))
 	}
 }
