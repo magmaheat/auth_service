@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/magmaheat/auth_service/configs"
+	"github.com/magmaheat/auth_service/internal/repo"
+	"github.com/magmaheat/auth_service/internal/service"
+	"github.com/magmaheat/auth_service/pkg/hasher"
 	"github.com/magmaheat/auth_service/pkg/httpserver"
 	"github.com/magmaheat/auth_service/pkg/postgres"
 	log "github.com/sirupsen/logrus"
@@ -25,13 +28,26 @@ func Run(configPath string) {
 	}
 	defer pg.Close()
 
-	log.Info("Initializing service...")
-	_ = pg
+	log.Info("Initializing repositories...")
+	repositories := repo.NewRepositories(pg)
 
-	log.Info("Initializing handlers...")
+	log.Info("Initializing service...")
+	deps := service.ServicesDependencies{
+		Repos:    repositories,
+		Hasher:   hasher.NewBCRYTHasher(),
+		SignKey:  cfg.SignKey,
+		TokenTTL: cfg.TokenTTL,
+	}
+
+	services := service.NewServices(deps)
+
+	log.Info("Initializing handlers and routes...")
 	handler := echo.New()
 
-	log.Info("Initializing server...")
+	//TODO init routes
+
+	log.Info("Starting http server...")
+	log.Debugf("Server port: %s", cfg.Port)
 	httpServer := httpserver.New(handler, httpserver.Port(cfg.Port))
 
 	log.Info("Configuring grace shutdown...")

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/golang-migrate/migrate/v4"
 	log "github.com/sirupsen/logrus"
+
 	// migrate tools
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -38,7 +39,7 @@ func init() {
 			break
 		}
 
-		log.Printf("Migrate: pgdb is trying to connect, attempts left")
+		log.Printf("Migrate: pgdb is trying to connect, attempts left: %d", attempts)
 		time.Sleep(defaultTimeout)
 	}
 
