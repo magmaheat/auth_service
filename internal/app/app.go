@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/magmaheat/auth_service/configs"
 	"github.com/magmaheat/auth_service/pkg/httpserver"
+	"github.com/magmaheat/auth_service/pkg/postgres"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -16,6 +17,16 @@ func Run(configPath string) {
 	}
 
 	setupLogger(cfg.Log.Level)
+
+	log.Info("Initializing postgres...")
+	pg, err := postgres.New(cfg.URL, postgres.MaxPoolSize(cfg.MaxPoolSize))
+	if err != nil {
+		log.Fatalf("app - Run - postgres.New: %w", err)
+	}
+	defer pg.Close()
+
+	log.Info("Initializing service...")
+	_ = pg
 
 	log.Info("Initializing handlers...")
 	handler := echo.New()
