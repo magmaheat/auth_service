@@ -35,8 +35,9 @@ type PG struct {
 }
 
 type JWT struct {
-	SignKey  string        `env-required:"true" yaml:"sign_key" env:"JWT_SIGN_KEY"`
-	TokenTTL time.Duration `env-required:"true" yaml:"token_ttl" env:"JWT_TOKEN_TTL"`
+	SignKey         string        `env-required:"true" yaml:"sign_key" env:"JWT_SIGN_KEY"`
+	TokenAccessTTL  time.Duration `env-required:"true" yaml:"token_access_ttl" env:"JWT_TOKEN_ACCESS_TTL"`
+	TokenRefreshTTL time.Duration `env-required:"true" yaml:"token_refresh_ttl" env:"JWT_TOKEN_REFRESH_TTL"`
 }
 
 func New(pathConfig string) (*Config, error) {

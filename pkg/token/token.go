@@ -9,11 +9,16 @@ import (
 
 type ServiceToken interface {
 	Generate(input GenerateInput) (string, error)
+	Decode(token string) (*Payload, error)
 	Validate(token string) error
 	Hash(token string) string
 }
 
 type Base64Token struct{}
+
+func NewBase64Token () *Base64Token {
+	return &Base64Token{}
+}
 
 type Payload struct {
 	TokenId string `json:"token_id"`
@@ -77,3 +82,5 @@ func (b *Base64Token) Validate(token string) error {
 func (b *Base64Token) Hash(token string) string {
 
 }
+
+func (b *Base64Token)

@@ -25,6 +25,6 @@ type Services struct {
 
 func NewServices(deps ServicesDependencies) *Services {
 	return &Services{
-		Auth: NewAuthService(deps.Repos.User, deps.Token, deps.SignKey, deps.TokenAccessTTL, deps.TokenRefreshTTL),
+		Auth: NewAuthService(deps.Repos.Token, deps.Token, deps.SignKey, deps.TokenAccessTTL, deps.TokenRefreshTTL),
 	}
 }

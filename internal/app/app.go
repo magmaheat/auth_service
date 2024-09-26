@@ -33,10 +33,11 @@ func Run(configPath string) {
 
 	log.Info("Initializing service...")
 	deps := service.ServicesDependencies{
-		Repos:    repositories,
-		Hasher:   token.NewBCRYTHasher(),
-		SignKey:  cfg.SignKey,
-		TokenTTL: cfg.TokenTTL,
+		Repos:           repositories,
+		Token:           token.NewBase64Token(),
+		SignKey:         cfg.SignKey,
+		TokenAccessTTL:  cfg.TokenAccessTTL,
+		TokenRefreshTTL: cfg.TokenRefreshTTL,
 	}
 
 	services := service.NewServices(deps)

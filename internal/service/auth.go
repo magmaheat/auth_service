@@ -19,19 +19,20 @@ type TokenClaims struct {
 
 type Auth interface {
 	GenerateTokens(id, ip string) (string, string, error)
+	UpdateTokens()
 }
 
 type AuthService struct {
-	UserRepo        repo.User
+	TokenRepo       repo.Token
 	Token           token.ServiceToken
 	SignKey         string
 	TokenAccessTTL  time.Duration
 	TokenRefreshTTL time.Duration
 }
 
-func NewAuthService(userRepo repo.User, token token.ServiceToken, signKey string, tokenAccessTTL, tokenRefreshTTL time.Duration) *AuthService {
+func NewAuthService(userRepo repo.Token, token token.ServiceToken, signKey string, tokenAccessTTL, tokenRefreshTTL time.Duration) *AuthService {
 	return &AuthService{
-		UserRepo:        userRepo,
+		TokenRepo:       userRepo,
 		Token:           token,
 		SignKey:         signKey,
 		TokenAccessTTL:  tokenAccessTTL,
@@ -72,7 +73,15 @@ func (a *AuthService) GenerateTokens(id, ip string) (string, string, error) {
 	return accessTokenString, refreshTokenString, nil
 }
 
-func (a *AuthService) UpdateTokens(ip, refreshToken, token string) (*AuthUpdateTokens, error) {
+func (a *AuthService) UpdateTokens(refreshToken, accessToken string) (*AuthUpdateTokens, error) {
 	//err := a.Token.Validate(refreshToken) // TODO middleware validate
+	// cюда приходит связный токен, не истекший рефреш
+	payloadRefresh, err := a.Token.Decode(refreshToken)
+	if
+
+	allTokens, err := a.TokenRepo.GetAllTokens()
+	if err != nil || len(allTokens) == 0 {
+
+	}
 
 }
