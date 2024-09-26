@@ -1,10 +1,11 @@
 package entity
 
-import "time"
+import (
+	"github.com/google/uuid"
+)
 
 type User struct {
-	Id        int       `db:"id"`
-	Username  string    `db:"username"`
-	Password  string    `db:"password"`
-	CreatedAt time.Time `db:"created_at"`
+	UserId      uuid.UUID `db:"user_id"`
+	Token       string    `db:"token"`
+	StatusToken string    `db:"status_token"`
 }
