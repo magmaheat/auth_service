@@ -8,7 +8,7 @@ import (
 
 type ServicesDependencies struct {
 	Repos           *repo.Repositories
-	Token           token.ServiceToken
+	TokenManager    token.Manager
 	SignKey         string
 	TokenAccessTTL  time.Duration
 	TokenRefreshTTL time.Duration
@@ -25,6 +25,6 @@ type Services struct {
 
 func NewServices(deps ServicesDependencies) *Services {
 	return &Services{
-		Auth: NewAuthService(deps.Repos.Token, deps.Token, deps.SignKey, deps.TokenAccessTTL, deps.TokenRefreshTTL),
+		Auth: NewAuthService(deps.Repos.Token, deps.TokenManager, deps.SignKey, deps.TokenAccessTTL, deps.TokenRefreshTTL),
 	}
 }

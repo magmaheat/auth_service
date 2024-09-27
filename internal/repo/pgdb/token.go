@@ -13,14 +13,14 @@ func NewTokenRepo(pg *postgres.Postgres) *TokenRepo {
 	return &TokenRepo{Postgres: pg}
 }
 
-func (t *TokenRepo) CreateToken(id, token string) error {
-
+func (t *TokenRepo) CreateToken(idUser, idToken string) error {
+	return nil
 }
 
-func (t *TokenRepo) GetAllTokens(id string) ([]entity.Token, error) {
-
+func (t *TokenRepo) GetToken(idToken string) (entity.Token, error) {
+	return entity.Token{}, nil
 }
 
-func (t *TokenRepo) DeactivateAllTokens(id string) error {
-
+func (t *TokenRepo) DeactivateToken(idToken string) error {
+	return nil
 }

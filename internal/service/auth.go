@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/magmaheat/auth_service/internal/repo"
 	"github.com/magmaheat/auth_service/pkg/token"
@@ -10,78 +9,62 @@ import (
 	"time"
 )
 
-type TokenClaims struct {
-	jwt.StandardClaims
-	UserGUID string
-	UserIp   string
-	TokenId  string
-}
-
 type Auth interface {
-	GenerateTokens(id, ip string) (string, string, error)
+	GenerateTokens()
 	UpdateTokens()
 }
 
 type AuthService struct {
 	TokenRepo       repo.Token
-	Token           token.ServiceToken
+	TokenManager    token.Manager
 	SignKey         string
 	TokenAccessTTL  time.Duration
 	TokenRefreshTTL time.Duration
 }
 
-func NewAuthService(userRepo repo.Token, token token.ServiceToken, signKey string, tokenAccessTTL, tokenRefreshTTL time.Duration) *AuthService {
+func NewAuthService(userRepo repo.Token, tokenManager token.Manager, signKey string, tokenAccessTTL, tokenRefreshTTL time.Duration) *AuthService {
 	return &AuthService{
 		TokenRepo:       userRepo,
-		Token:           token,
+		TokenManager:    tokenManager,
 		SignKey:         signKey,
 		TokenAccessTTL:  tokenAccessTTL,
 		TokenRefreshTTL: tokenRefreshTTL,
 	}
 }
 
-func (a *AuthService) GenerateTokens(id, ip string) (string, string, error) {
+func (a *AuthService) GenerateTokens(userId, userIp string) (string, string, error) {
 	tokenId := uuid.New().String()
 
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS512, &TokenClaims{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(a.TokenAccessTTL).Unix(),
-			IssuedAt:  time.Now().Unix(),
-		},
-		UserIp:   ip,
-		UserGUID: id,
-		TokenId:  tokenId,
+	accessToken, err := a.TokenManager.GenerateAccess(token.GenerateAccessInput{
+		TokenId: tokenId,
+		SignKey: a.SignKey,
+		Expiry:  a.TokenAccessTTL,
 	})
 
-	accessTokenString, err := accessToken.SignedString([]byte(a.SignKey))
 	if err != nil {
-		log.Errorf("AuthService.GenerateToken: cannot sing hasher: %v", err)
-		return "", "", fmt.Errorf("error generate token: %v", err)
+		log.Errorf("service - auth - GenerateTokens.GenerateAccess: %v", err)
+		return "", "", fmt.Errorf("error generate tokens")
 	}
 
-	input := token.GenerateInput{
-		Id:      id,
-		Ip:      ip,
-		SignKey: a.SignKey,
+	refreshToken, err := a.TokenManager.GenerateRefresh(token.GenerateRefreshInput{
+		UserIp:  userIp,
 		TokenId: tokenId,
+		SignKey: a.SignKey,
 		Expiry:  a.TokenRefreshTTL,
-	}
-	refreshTokenString, err := a.Token.Generate(input)
+	})
 
-	//TODO CreateToken(id)=
-
-	return accessTokenString, refreshTokenString, nil
-}
-
-func (a *AuthService) UpdateTokens(refreshToken, accessToken string) (*AuthUpdateTokens, error) {
-	//err := a.Token.Validate(refreshToken) // TODO middleware validate
-	// cюда приходит связный токен, не истекший рефреш
-	payloadRefresh, err := a.Token.Decode(refreshToken)
-	if
-
-	allTokens, err := a.TokenRepo.GetAllTokens()
-	if err != nil || len(allTokens) == 0 {
-
+	if err != nil {
+		log.Errorf("service - auth - GenerateTokens.GenerateRefresh: %v", err)
+		return "", "", fmt.Errorf("error generate tokens")
 	}
 
+	err = a.TokenRepo.CreateToken(userId, tokenId)
+	if err != nil {
+		log.Errorf("service - auth - GenerateTokens - CreateToken: %v", err)
+		return "", "", fmt.Errorf("error create token")
+	}
+
+	return accessToken, refreshToken, nil
 }
+
+func (a *AuthService) UpdateTokens() {}

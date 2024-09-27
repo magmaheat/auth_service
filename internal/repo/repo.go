@@ -7,10 +7,9 @@ import (
 )
 
 type Token interface {
-	CreateToken(id, token string) error
-	GetAllTokens(id string) ([]entity.Token, error)
-	DeactivateToken(hashToken string) error
-	DeactivateAllTokens(id string) error
+	CreateToken(idUser, idToken string) error
+	GetToken(idToken string) (entity.Token, error)
+	DeactivateToken(idToken string) error
 }
 
 type Repositories struct {

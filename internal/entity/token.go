@@ -7,7 +7,7 @@ import (
 
 type Token struct {
 	UserId      uuid.UUID `db:"user_id"`
-	Token       string    `db:"token"`
+	TokenId     uuid.UUID `db:"token"`
 	StatusToken string    `db:"status_token"`
 	CreatedAt   time.Time `db:"created_at"`
 }

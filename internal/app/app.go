@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/magmaheat/auth_service/configs"
+	v1 "github.com/magmaheat/auth_service/internal/controller/http/v1"
 	"github.com/magmaheat/auth_service/internal/repo"
 	"github.com/magmaheat/auth_service/internal/service"
 	"github.com/magmaheat/auth_service/pkg/httpserver"
@@ -34,7 +35,7 @@ func Run(configPath string) {
 	log.Info("Initializing service...")
 	deps := service.ServicesDependencies{
 		Repos:           repositories,
-		Token:           token.NewBase64Token(),
+		TokenManager:    token.NewBase64Token(),
 		SignKey:         cfg.SignKey,
 		TokenAccessTTL:  cfg.TokenAccessTTL,
 		TokenRefreshTTL: cfg.TokenRefreshTTL,
@@ -45,7 +46,7 @@ func Run(configPath string) {
 	log.Info("Initializing handlers and routes...")
 	handler := echo.New()
 
-	//TODO init routes
+	v1.NewRouter(handler, services)
 
 	log.Info("Starting http server...")
 	log.Debugf("Server port: %s", cfg.Port)
