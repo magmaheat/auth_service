@@ -1,15 +1,14 @@
 package repo
 
 import (
-	"github.com/magmaheat/auth_service/internal/entity"
 	"github.com/magmaheat/auth_service/internal/repo/pgdb"
 	"github.com/magmaheat/auth_service/pkg/postgres"
 )
 
 type Token interface {
-	CreateToken(idUser, idToken string) error
-	GetToken(idToken string) (entity.Token, error)
-	DeactivateToken(idToken string) error
+	CreateToken(userId, tokenId string) error
+	GetStateToken(tokenId string) (string, error)
+	DeactivateAllTokens(userId string) error
 }
 
 type Repositories struct {

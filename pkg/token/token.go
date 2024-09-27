@@ -9,6 +9,7 @@ import (
 type Manager interface {
 	GenerateRefresh(input GenerateRefreshInput) (string, error)
 	GenerateAccess(input GenerateAccessInput) (string, error)
+	GetUserIdAndTokenId(tkn, signKey string) (string, string, error)
 	Validate(input ValidateInput) error
 }
 
@@ -16,6 +17,7 @@ type Base64URL struct{}
 
 type GenerateRefreshInput struct {
 	UserIp  string
+	UserId  string
 	TokenId string
 	SignKey string
 	Expiry  time.Duration
@@ -37,6 +39,7 @@ type ValidateInput struct {
 type PersonClaims struct {
 	jwt.StandardClaims
 	UserIp  string
+	UserId  string
 	TokenId string
 }
 
@@ -51,6 +54,7 @@ func (b *Base64URL) GenerateRefresh(input GenerateRefreshInput) (string, error) 
 			IssuedAt:  time.Now().Unix(),
 		},
 		UserIp:  input.UserIp,
+		UserId:  input.UserId,
 		TokenId: input.TokenId,
 	})
 
@@ -102,7 +106,7 @@ func (b *Base64URL) Validate(input ValidateInput) error {
 	}
 
 	if input.UserIp != refreshClaims.UserIp {
-		return fmt.Errorf("IP address mismatch")
+		return ErrMismatchIP
 	}
 
 	if accessClaims.TokenId != refreshClaims.TokenId {
@@ -110,6 +114,20 @@ func (b *Base64URL) Validate(input ValidateInput) error {
 	}
 
 	return nil
+}
+
+func GetUserIdAndTokenId(tkn, signKey string) (string, string, error) {
+	token, err := decode(tkn, signKey)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	if tokenClaims, ok := token.Claims.(*PersonClaims); ok && token.Valid {
+		return tokenClaims.UserId, tokenClaims.TokenId, nil
+	}
+
+	return "", "", fmt.Errorf("invalid token")
 }
 
 func decode(tkn, signKey string) (*jwt.Token, error) {

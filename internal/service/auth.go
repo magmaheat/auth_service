@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/magmaheat/auth_service/internal/repo"
@@ -10,8 +11,8 @@ import (
 )
 
 type Auth interface {
-	GenerateTokens()
-	UpdateTokens()
+	GenerateTokens(userId, userIp string) (string, string, error)
+	UpdateTokens(accessToken, refreshToken, userIp string) (string, string, error)
 }
 
 type AuthService struct {
@@ -67,4 +68,50 @@ func (a *AuthService) GenerateTokens(userId, userIp string) (string, string, err
 	return accessToken, refreshToken, nil
 }
 
-func (a *AuthService) UpdateTokens() {}
+func (a *AuthService) UpdateTokens(accessToken, refreshToken, userIp string) (string, string, error) {
+	err := a.TokenManager.Validate(token.ValidateInput{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		UserIp:       userIp,
+		SignKey:      a.SignKey,
+	})
+
+	if err != nil {
+		if errors.Is(err, token.ErrMismatchIP) {
+			idUser, _, _ := a.TokenManager.GetUserIdAndTokenId(refreshToken, a.SignKey)
+			log.Errorf("UpdateTokens - GetUserIdAndTokenId: %v", err)
+
+			err = a.TokenRepo.DeactivateAllTokens(idUser)
+			if err != nil {
+				log.Errorf("UpdateTokens - DeactivateAllTokens: %v", err)
+			}
+
+			log.Info("success deactivate all tokens")
+		}
+
+		return "", "", fmt.Errorf("no valid token")
+	}
+
+	userId, tokenId, _ := a.TokenManager.GetUserIdAndTokenId(refreshToken, a.SignKey)
+	state, err := a.TokenRepo.GetStateToken(tokenId)
+	if err != nil {
+		log.Errorf("UpdateTokens - GetToken: %v", err)
+		return "", "", fmt.Errorf("error get token")
+	}
+
+	if state == "no" {
+		err = a.TokenRepo.DeactivateAllTokens(userId)
+		if err != nil {
+			log.Errorf("UpdateTokens - DeactivateAllTokens: %v", err)
+		}
+
+		return "", "", fmt.Errorf("no valid token")
+	}
+
+	accessToken, refreshToken, err = a.GenerateTokens(userId, userIp)
+	if err != nil {
+		return "", "", fmt.Errorf("error update token")
+	}
+
+	return accessToken, refreshToken, nil
+}
