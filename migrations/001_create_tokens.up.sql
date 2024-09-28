@@ -4,4 +4,3 @@ CREATE TABLE tokens (
     valid VARCHAR(3) NOT NULL DEFAULT 'yes' CHECK (valid IN ('yes', 'no')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-

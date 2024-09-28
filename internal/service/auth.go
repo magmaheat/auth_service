@@ -1,11 +1,12 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/magmaheat/auth_service/internal/repo"
-	"github.com/magmaheat/auth_service/pkg/token"
+	"github.com/magmaheat/auth_service/internal/service/sender"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
@@ -17,15 +18,17 @@ type Auth interface {
 
 type AuthService struct {
 	TokenRepo       repo.Token
-	TokenManager    token.Manager
+	Sender          *sender.Sender
+	TokenManager    Manager
 	SignKey         string
 	TokenAccessTTL  time.Duration
 	TokenRefreshTTL time.Duration
 }
 
-func NewAuthService(userRepo repo.Token, tokenManager token.Manager, signKey string, tokenAccessTTL, tokenRefreshTTL time.Duration) *AuthService {
+func NewAuthService(tokenRepo repo.Token, tokenManager Manager, signKey string, tokenAccessTTL, tokenRefreshTTL time.Duration, snd *sender.Sender) *AuthService {
 	return &AuthService{
-		TokenRepo:       userRepo,
+		TokenRepo:       tokenRepo,
+		Sender:          snd,
 		TokenManager:    tokenManager,
 		SignKey:         signKey,
 		TokenAccessTTL:  tokenAccessTTL,
@@ -36,7 +39,7 @@ func NewAuthService(userRepo repo.Token, tokenManager token.Manager, signKey str
 func (a *AuthService) GenerateTokens(userId, userIp string) (string, string, error) {
 	tokenId := uuid.New().String()
 
-	accessToken, err := a.TokenManager.GenerateAccess(token.GenerateAccessInput{
+	accessToken, err := a.TokenManager.GenerateAccess(GenerateAccessInput{
 		TokenId: tokenId,
 		SignKey: a.SignKey,
 		Expiry:  a.TokenAccessTTL,
@@ -47,7 +50,7 @@ func (a *AuthService) GenerateTokens(userId, userIp string) (string, string, err
 		return "", "", fmt.Errorf("error generate tokens")
 	}
 
-	refreshToken, err := a.TokenManager.GenerateRefresh(token.GenerateRefreshInput{
+	refreshToken, err := a.TokenManager.GenerateRefresh(GenerateRefreshInput{
 		UserId:  userId,
 		UserIp:  userIp,
 		TokenId: tokenId,
@@ -70,7 +73,7 @@ func (a *AuthService) GenerateTokens(userId, userIp string) (string, string, err
 }
 
 func (a *AuthService) UpdateTokens(accessToken, refreshToken, userIp string) (string, string, error) {
-	err := a.TokenManager.Validate(token.ValidateInput{
+	err := a.TokenManager.Validate(ValidateInput{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		UserIp:       userIp,
@@ -78,7 +81,9 @@ func (a *AuthService) UpdateTokens(accessToken, refreshToken, userIp string) (st
 	})
 
 	if err != nil {
-		if errors.Is(err, token.ErrMismatchIP) {
+		if errors.Is(err, ErrMismatchIP) {
+			_ = a.Sender.SendEmail(context.Background(), "")
+
 			userId, _, _ := a.TokenManager.GetUserIdAndTokenId(refreshToken, a.SignKey)
 			log.Errorf("UpdateTokens - GetUserIdAndTokenId: %v", err)
 
@@ -103,6 +108,8 @@ func (a *AuthService) UpdateTokens(accessToken, refreshToken, userIp string) (st
 	}
 
 	if state == "no" {
+		_ = a.Sender.SendEmail(context.Background(), "")
+
 		err = a.TokenRepo.DeactivateAllTokens(userId)
 		if err != nil {
 			log.Errorf("UpdateTokens - DeactivateAllTokens: %v", err)

@@ -7,9 +7,9 @@ import (
 	v1 "github.com/magmaheat/auth_service/internal/controller/http/v1"
 	"github.com/magmaheat/auth_service/internal/repo"
 	"github.com/magmaheat/auth_service/internal/service"
+	"github.com/magmaheat/auth_service/internal/service/sender"
 	"github.com/magmaheat/auth_service/pkg/httpserver"
 	"github.com/magmaheat/auth_service/pkg/postgres"
-	"github.com/magmaheat/auth_service/pkg/token"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -35,7 +35,8 @@ func Run(configPath string) {
 	log.Info("Initializing service...")
 	deps := service.ServicesDependencies{
 		Repos:           repositories,
-		TokenManager:    token.NewBase64URL(),
+		Sender:          sender.New(),
+		TokenManager:    service.NewBase64URL(),
 		SignKey:         cfg.SignKey,
 		TokenAccessTTL:  cfg.TokenAccessTTL,
 		TokenRefreshTTL: cfg.TokenRefreshTTL,
