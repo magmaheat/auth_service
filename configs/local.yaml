@@ -12,4 +12,5 @@ pg:
   max_pool_size: 20
 
 jwt:
-  token_ttl: 60m
+  token_access_ttl: 15m
+  token_refresh_ttl: 12h

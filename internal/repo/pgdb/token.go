@@ -23,7 +23,7 @@ func (t *TokenRepo) CreateToken(userId, tokenId string) error {
 		Values(userId, tokenId).
 		ToSql()
 
-	err := t.Pool.QueryRow(context.Background(), sql, args...)
+	_, err := t.Pool.Exec(context.Background(), sql, args...)
 	if err != nil {
 		log.Errorf("pgdb - CreateToeken.QueryRow: %v", err)
 		return fmt.Errorf("error create token")
@@ -33,22 +33,61 @@ func (t *TokenRepo) CreateToken(userId, tokenId string) error {
 }
 
 func (t *TokenRepo) GetStateToken(tokenId string) (string, error) {
+	ctx := context.Background()
+
+	tx, err := t.Pool.Begin(ctx)
+	if err != nil {
+		log.Errorf("pgdb - Begin transaction: %v", err)
+		return "", fmt.Errorf("error beginning transaction")
+	}
+	defer tx.Rollback(ctx) // Откат транзакции в случае ошибки
+
 	sql, args, _ := t.Builder.
 		Select("valid").
-		From("get_and_invalidate_token(?)").
+		From("tokens").
 		Where(squirrel.Eq{"token_id": tokenId}).
 		ToSql()
 
 	var valid string
-	err := t.Pool.QueryRow(context.Background(), sql, args...).Scan(&valid)
+	err = tx.QueryRow(ctx, sql, args...).Scan(&valid)
 	if err != nil {
-		log.Errorf("pgdb - GetStateToken.QueryRow: %v", err)
-		return "", fmt.Errorf("error get state token")
+		log.Errorf("pgdb - GetAndInvalidateToken.QueryRow: %v", err)
+		return "", fmt.Errorf("error getting token state")
+	}
+
+	sql, args, _ = t.Builder.
+		Update("tokens").
+		Set("valid", "no").
+		Where(squirrel.Eq{"token_id": tokenId}).
+		ToSql()
+
+	_, err = tx.Exec(ctx, sql, args...)
+	if err != nil {
+		log.Errorf("pgdb - GetAndInvalidateToken.Update: %v", err)
+		return "", fmt.Errorf("error updating token state")
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		log.Errorf("pgdb - Commit transaction: %v", err)
+		return "", fmt.Errorf("error committing transaction")
 	}
 
 	return valid, nil
 }
 
 func (t *TokenRepo) DeactivateAllTokens(userId string) error {
+	sql, args, _ := t.Builder.
+		Update("tokens").
+		Set("valid", "no").
+		Where(squirrel.Eq{"user_id": userId}).
+		ToSql()
+
+	_, err := t.Pool.Exec(context.Background(), sql, args...)
+	if err != nil {
+		log.Errorf("pgdb - DeactivateAllTokens.QueryRow: %v", err)
+		return fmt.Errorf("error deactivate all tokens")
+	}
+
 	return nil
 }

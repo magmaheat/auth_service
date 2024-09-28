@@ -43,7 +43,7 @@ type PersonClaims struct {
 	TokenId string
 }
 
-func NewBase64Token() *Base64URL {
+func NewBase64URL() *Base64URL {
 	return &Base64URL{}
 }
 
@@ -116,7 +116,7 @@ func (b *Base64URL) Validate(input ValidateInput) error {
 	return nil
 }
 
-func GetUserIdAndTokenId(tkn, signKey string) (string, string, error) {
+func (b *Base64URL) GetUserIdAndTokenId(tkn, signKey string) (string, string, error) {
 	token, err := decode(tkn, signKey)
 
 	if err != nil {

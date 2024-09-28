@@ -35,7 +35,7 @@ func Run(configPath string) {
 	log.Info("Initializing service...")
 	deps := service.ServicesDependencies{
 		Repos:           repositories,
-		TokenManager:    token.NewBase64Token(),
+		TokenManager:    token.NewBase64URL(),
 		SignKey:         cfg.SignKey,
 		TokenAccessTTL:  cfg.TokenAccessTTL,
 		TokenRefreshTTL: cfg.TokenRefreshTTL,

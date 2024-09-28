@@ -48,6 +48,7 @@ func (a *AuthService) GenerateTokens(userId, userIp string) (string, string, err
 	}
 
 	refreshToken, err := a.TokenManager.GenerateRefresh(token.GenerateRefreshInput{
+		UserId:  userId,
 		UserIp:  userIp,
 		TokenId: tokenId,
 		SignKey: a.SignKey,
@@ -78,10 +79,10 @@ func (a *AuthService) UpdateTokens(accessToken, refreshToken, userIp string) (st
 
 	if err != nil {
 		if errors.Is(err, token.ErrMismatchIP) {
-			idUser, _, _ := a.TokenManager.GetUserIdAndTokenId(refreshToken, a.SignKey)
+			userId, _, _ := a.TokenManager.GetUserIdAndTokenId(refreshToken, a.SignKey)
 			log.Errorf("UpdateTokens - GetUserIdAndTokenId: %v", err)
 
-			err = a.TokenRepo.DeactivateAllTokens(idUser)
+			err = a.TokenRepo.DeactivateAllTokens(userId)
 			if err != nil {
 				log.Errorf("UpdateTokens - DeactivateAllTokens: %v", err)
 			}
@@ -89,10 +90,12 @@ func (a *AuthService) UpdateTokens(accessToken, refreshToken, userIp string) (st
 			log.Info("success deactivate all tokens")
 		}
 
+		log.Errorf("service - Auth - UpdateTokens.Validate: %v", err)
 		return "", "", fmt.Errorf("no valid token")
 	}
 
 	userId, tokenId, _ := a.TokenManager.GetUserIdAndTokenId(refreshToken, a.SignKey)
+	log.Infof("userId: %s", userId)
 	state, err := a.TokenRepo.GetStateToken(tokenId)
 	if err != nil {
 		log.Errorf("UpdateTokens - GetToken: %v", err)
