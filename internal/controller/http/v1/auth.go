@@ -41,10 +41,11 @@ func (a *AuthRouter) LoginHandler(c echo.Context) error {
 		return ErrGenerateTokens
 	}
 
-	return c.JSON(http.StatusCreated, Response{
+	c.JSON(http.StatusCreated, Response{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	})
+
 	return nil
 }
 
@@ -67,6 +68,7 @@ func (a *AuthRouter) UpdateHandler(c echo.Context) error {
 	accessToken, refreshToken, err := a.Auth.UpdateTokens(token, input.RefreshToken, userIp)
 	if err != nil {
 		NewErrorResponce(c, http.StatusUnauthorized, err.Error())
+		return err
 	}
 
 	c.JSON(http.StatusOK, Response{
